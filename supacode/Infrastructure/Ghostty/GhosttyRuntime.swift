@@ -24,7 +24,7 @@ final class GhosttyRuntime {
   private var lastColorScheme: ghostty_color_scheme_e?
   var onConfigChange: (() -> Void)?
 
-  init() {
+  init(initialColorScheme: ColorScheme? = nil) {
     guard let config = Self.loadConfig() else {
       preconditionFailure("ghostty_config_new failed")
     }
@@ -62,6 +62,14 @@ final class GhosttyRuntime {
       preconditionFailure("ghostty_app_new failed")
     }
     self.app = app
+
+    // Apply initial color scheme immediately after app creation,
+    // before any surfaces are created. This fixes the race condition
+    // where surfaces were created with the default (light) theme before
+    // GhosttyColorSchemeSyncView.task could run.
+    if let initialScheme = initialColorScheme {
+      setColorScheme(initialScheme)
+    }
 
     let center = NotificationCenter.default
     observers.append(
