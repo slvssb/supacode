@@ -1,11 +1,13 @@
 import AppKit
 import ComposableArchitecture
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct WorktreeDetailView: View {
   @Bindable var store: StoreOf<AppFeature>
   let terminalManager: WorktreeTerminalManager
   @Environment(CommandKeyObserver.self) private var commandKeyObserver
+  @State private var multiWorktreeContainer: MultiWorktreeSplitContainer?
 
   var body: some View {
     detailBody(state: store.state)
@@ -31,6 +33,16 @@ struct WorktreeDetailView: View {
         )
       } else if let loadingInfo {
         WorktreeLoadingView(info: loadingInfo)
+      } else if let multiWorktreeContainer = multiWorktreeContainer {
+        MultiWorktreeSplitView(
+          container: multiWorktreeContainer,
+          allWorktrees: repositories.allWorktrees,
+          onWorktreeDrop: handleWorktreeDrop,
+          onClose: {
+            multiWorktreeContainer = nil
+          }
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
       } else if let selectedWorktree {
         let shouldRunSetupScript = repositories.pendingSetupScriptWorktreeIDs.contains(selectedWorktree.id)
         let shouldFocusTerminal = repositories.shouldFocusTerminal(for: selectedWorktree.id)
@@ -47,6 +59,37 @@ struct WorktreeDetailView: View {
           if shouldFocusTerminal {
             store.send(.repositories(.consumeTerminalFocus(selectedWorktree.id)))
           }
+        }
+        .background {
+          Color.clear
+            .contentShape(.rect)
+            .onDrop(of: [UTType(exportedAs: "sh.supacode.worktreeId")], isTargeted: nil) { providers in
+              guard let provider = providers.first,
+                let primaryWorktree = store.state.repositories.worktree(for: store.state.repositories.selectedWorktreeID)
+              else { return false }
+              let worktreeType = UTType(exportedAs: "sh.supacode.worktreeId")
+              provider.loadDataRepresentation(forTypeIdentifier: worktreeType.identifier) { data, _ in
+                guard let data,
+                  let worktreeID = String(data: data, encoding: .utf8),
+                  let worktree = store.state.repositories.worktree(id: worktreeID)
+                else { return }
+                Task { @MainActor in
+                  // Create multi-worktree container with current worktree as primary
+                  let container = MultiWorktreeSplitContainer(
+                    runtime: terminalManager.runtimeValue,
+                    primaryWorktree: primaryWorktree
+                  )
+                  multiWorktreeContainer = container
+                  // If dropping a different worktree, add it as a split
+                  if worktree.id != primaryWorktree.id,
+                     let surfaceID = container.tree.root?.leftmostLeaf()?.id
+                  {
+                    container.insertSurface(for: worktree, at: surfaceID, zone: .right)
+                  }
+                }
+              }
+              return true
+            }
         }
       } else {
         EmptyStateView(store: store.scope(state: \.repositories, action: \.repositories))
@@ -335,6 +378,44 @@ struct WorktreeDetailView: View {
       )
     }
     return nil
+  }
+
+  private func handleWorktreeDrop(
+    _ worktreeID: Worktree.ID,
+    _ destinationID: UUID,
+    _ zone: TerminalSplitTreeView.DropZone
+  ) {
+    guard let worktree = store.state.repositories.worktree(id: worktreeID) else { return }
+    guard let primaryWorktree = store.state.repositories.worktree(for: store.state.repositories.selectedWorktreeID) else {
+      return
+    }
+
+    // If container doesn't exist, create it with the currently selected worktree as primary
+    let container: MultiWorktreeSplitContainer
+    if let existing = multiWorktreeContainer {
+      container = existing
+    } else {
+      container = MultiWorktreeSplitContainer(
+        runtime: terminalManager.runtimeValue,
+        primaryWorktree: primaryWorktree
+      )
+      multiWorktreeContainer = container
+    }
+
+    // If dropping a different worktree, insert it
+    if worktree.id != primaryWorktree.id {
+      container.insertSurface(for: worktree, at: destinationID, zone: zone)
+    }
+  }
+
+  private func handleWorktreeDrop(
+    _ worktreeID: Worktree.ID,
+    _ destinationID: UUID,
+    _ zone: TerminalSplitTreeView.DropZone,
+    in container: MultiWorktreeSplitContainer
+  ) {
+    guard let worktree = store.state.repositories.worktree(id: worktreeID) else { return }
+    container.insertSurface(for: worktree, at: destinationID, zone: zone)
   }
 }
 

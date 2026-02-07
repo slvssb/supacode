@@ -221,6 +221,10 @@ final class WorktreeTerminalManager {
     states[worktreeID]?.hasUnseenNotification == true
   }
 
+  var runtimeValue: GhosttyRuntime {
+    runtime
+  }
+
   private func emit(_ event: TerminalClient.Event) {
     guard let eventContinuation else {
       pendingEvents.append(event)

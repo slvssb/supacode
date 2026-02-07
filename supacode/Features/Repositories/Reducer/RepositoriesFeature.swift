@@ -1910,6 +1910,19 @@ extension RepositoriesFeature.State {
     return nil
   }
 
+  func worktree(id: Worktree.ID) -> Worktree? {
+    for repository in repositories {
+      if let worktree = repository.worktrees[id: id] {
+        return worktree
+      }
+    }
+    return nil
+  }
+
+  var allWorktrees: [Worktree] {
+    repositories.flatMap { $0.worktrees.elements }
+  }
+
   func pendingWorktree(for id: Worktree.ID?) -> PendingWorktree? {
     guard let id else { return nil }
     return pendingWorktrees.first(where: { $0.id == id })

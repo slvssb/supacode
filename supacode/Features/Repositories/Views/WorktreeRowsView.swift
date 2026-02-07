@@ -1,6 +1,7 @@
 import AppKit
 import ComposableArchitecture
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct WorktreeRowsView: View {
   let repository: Repository
@@ -10,6 +11,21 @@ struct WorktreeRowsView: View {
   @Environment(CommandKeyObserver.self) private var commandKeyObserver
   @Environment(\.colorScheme) private var colorScheme
   @State private var draggingWorktreeIDs: Set<Worktree.ID> = []
+
+  private static let worktreeDragType = UTType(exportedAs: "sh.supacode.worktreeId")
+
+  private static func worktreeDragProvider(for worktreeID: Worktree.ID) -> NSItemProvider {
+    let provider = NSItemProvider()
+    let data = worktreeID.data(using: .utf8) ?? Data()
+    provider.registerDataRepresentation(
+      forTypeIdentifier: worktreeDragType.identifier,
+      visibility: .all
+    ) { completion in
+      completion(data, nil)
+      return nil
+    }
+    return provider
+  }
 
   var body: some View {
     if isExpanded {
@@ -174,6 +190,9 @@ struct WorktreeRowsView: View {
       shortcutHint: config.shortcutHint,
       archiveAction: config.archiveAction
     )
+    .onDrag {
+      Self.worktreeDragProvider(for: row.id)
+    }
     .tag(SidebarSelection.worktree(row.id))
     .typeSelectEquivalent("")
     .listRowInsets(EdgeInsets())
