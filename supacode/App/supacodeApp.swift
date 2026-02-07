@@ -22,13 +22,6 @@ private enum GhosttyCLI {
     for shortcut in AppShortcuts.all {
       args.append(strdup("--keybind=\(shortcut.ghosttyKeybind)=unbind"))
     }
-    // Override the theme from config file to ensure the correct initial scheme.
-    // We use the Apple System Colors themes which respect the color_scheme setting.
-    if let scheme = colorScheme {
-      let theme = scheme == .dark ? "Apple System Colors Dark" : "Apple System Colors Light"
-      args.append(strdup("--theme=\(theme)"))
-    }
-    // For .system mode (nil), don't override the theme - let Ghostty detect system appearance
     args.append(nil)
     return args
   }
@@ -92,8 +85,40 @@ struct SupacodeApp: App {
   @MainActor init() {
     NSWindow.allowsAutomaticWindowTabbing = false
     UserDefaults.standard.set(200, forKey: "NSInitialToolTipDelay")
+
     @Shared(.settingsFile) var settingsFile
     let initialSettings = settingsFile.global
+
+    // Update the user's Ghostty config file to use the correct theme.
+    // The config file takes precedence over CLI args and programmatic settings,
+    // so we must modify it directly to ensure the correct theme is applied.
+    let ghosttyConfigPath = (NSHomeDirectory() as NSString).appendingPathComponent("Library/Application Support/com.mitchellh.ghostty/config")
+    let themeName = initialSettings.appearanceMode.colorScheme == .dark ? "Apple System Colors" : "Apple System Colors Light"
+
+    if let currentConfig = try? String(contentsOfFile: ghosttyConfigPath, encoding: .utf8) {
+      // Replace or add the theme line
+      var lines = currentConfig.components(separatedBy: .newlines)
+      var themeLineFound = false
+      for i in 0..<lines.count {
+        let line = lines[i].trimmingCharacters(in: .whitespaces)
+        if line.hasPrefix("theme") {
+          lines[i] = "theme = \(themeName)"
+          themeLineFound = true
+          break
+        }
+      }
+      if !themeLineFound {
+        lines.append("theme = \(themeName)")
+      }
+      let updatedConfig = lines.joined(separator: "\n")
+      try? updatedConfig.write(toFile: ghosttyConfigPath, atomically: true, encoding: .utf8)
+      NSLog("[Supacode] Updated Ghostty config theme to: \(themeName)")
+    } else {
+      // Config file doesn't exist, create it
+      let configContent = "# Supacode Ghostty config\ntheme = \(themeName)\n"
+      try? configContent.write(toFile: ghosttyConfigPath, atomically: true, encoding: .utf8)
+      NSLog("[Supacode] Created Ghostty config with theme: \(themeName)")
+    }
     #if !DEBUG
       if initialSettings.crashReportsEnabled {
         SentrySDK.start { options in
