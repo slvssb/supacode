@@ -147,6 +147,12 @@ struct WorktreeDetailView: View {
       runScriptIsRunning: runScriptIsRunning
     )
     return applyFocusedActions(content: content, actions: actions)
+      .onChange(of: repositories.selectedWorktreeID) { oldValue, newValue in
+        // Exit multi-worktree split mode when selecting a different worktree from sidebar
+        if multiWorktreeContainer != nil, oldValue != newValue {
+          multiWorktreeContainer = nil
+        }
+      }
   }
 
   private func applyFocusedActions<Content: View>(
