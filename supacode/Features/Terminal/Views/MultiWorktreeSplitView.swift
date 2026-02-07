@@ -3,7 +3,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct MultiWorktreeSplitView: View {
-  @ObservedObject var container: MultiWorktreeSplitContainer
+  @Bindable var container: MultiWorktreeSplitContainer
   let allWorktrees: [Worktree]
   let onWorktreeDrop: (Worktree.ID, UUID, TerminalSplitTreeView.DropZone) -> Void
   let onClose: () -> Void
@@ -29,7 +29,7 @@ struct MultiWorktreeSplitView: View {
   struct SubtreeView: View {
     let node: SplitTree<GhosttySurfaceView>.Node
     var isRoot: Bool = false
-    @ObservedObject var container: MultiWorktreeSplitContainer
+    @Bindable var container: MultiWorktreeSplitContainer
     let allWorktrees: [Worktree]
     let onWorktreeDrop: (Worktree.ID, UUID, TerminalSplitTreeView.DropZone) -> Void
 
@@ -84,7 +84,7 @@ struct MultiWorktreeSplitView: View {
   struct LeafView: View {
     let surfaceView: GhosttySurfaceView
     let isSplit: Bool
-    @ObservedObject var container: MultiWorktreeSplitContainer
+    @Bindable var container: MultiWorktreeSplitContainer
     let allWorktrees: [Worktree]
     let onWorktreeDrop: (Worktree.ID, UUID, TerminalSplitTreeView.DropZone) -> Void
 
@@ -260,7 +260,8 @@ struct MultiWorktreeSplitView: View {
 
       // First try to handle worktree drop
       let worktreeType = UTType(exportedAs: "sh.supacode.worktreeId")
-      if let provider = info.itemProviders.first(where: { $0.hasItemConforming(toTypeIdentifier: worktreeType.identifier) }) {
+      let providers = info.itemProviders(for: [worktreeType])
+      if let provider = providers.first {
         provider.loadDataRepresentation(forTypeIdentifier: worktreeType.identifier) { data, _ in
           guard let data,
             let raw = String(data: data, encoding: .utf8)
@@ -273,8 +274,8 @@ struct MultiWorktreeSplitView: View {
       }
 
       // Otherwise handle surface drop
-      let providers = info.itemProviders(for: [TerminalSplitTreeView.dragType])
-      guard let provider = providers.first else { return false }
+      let surfaceProviders = info.itemProviders(for: [TerminalSplitTreeView.dragType])
+      guard let provider = surfaceProviders.first else { return false }
       provider.loadDataRepresentation(
         forTypeIdentifier: TerminalSplitTreeView.dragType.identifier
       ) { data, _ in

@@ -189,7 +189,7 @@ final class MultiWorktreeSplitContainer {
     }
     _tree = newTree
     if _focusedSurfaceID == view.id {
-      _focusedSurfaceID = newTree.root?.leftmostLeaf()?.id
+      _focusedSurfaceID = newTree.root?.leftmostLeaf().id
     }
   }
 

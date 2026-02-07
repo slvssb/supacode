@@ -6,7 +6,7 @@ struct TerminalSplitTreeView: View {
   let tree: SplitTree<GhosttySurfaceView>
   let action: (Operation) -> Void
 
-  private static let dragType = UTType(exportedAs: "sh.supacode.ghosttySurfaceId")
+  static let dragType = UTType(exportedAs: "sh.supacode.ghosttySurfaceId")
   private static func dragProvider(for surfaceView: GhosttySurfaceView) -> NSItemProvider {
     let provider = NSItemProvider()
     let data = surfaceView.id.uuidString.data(using: .utf8) ?? Data()

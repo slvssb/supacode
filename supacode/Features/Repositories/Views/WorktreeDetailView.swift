@@ -33,9 +33,9 @@ struct WorktreeDetailView: View {
         )
       } else if let loadingInfo {
         WorktreeLoadingView(info: loadingInfo)
-      } else if let multiWorktreeContainer = multiWorktreeContainer {
+      } else if let container = multiWorktreeContainer {
         MultiWorktreeSplitView(
-          container: multiWorktreeContainer,
+          container: container,
           allWorktrees: repositories.allWorktrees,
           onWorktreeDrop: handleWorktreeDrop,
           onClose: {
@@ -68,10 +68,11 @@ struct WorktreeDetailView: View {
                 let primaryWorktree = store.state.repositories.worktree(for: store.state.repositories.selectedWorktreeID)
               else { return false }
               let worktreeType = UTType(exportedAs: "sh.supacode.worktreeId")
+              let repositories = store.state.repositories
               provider.loadDataRepresentation(forTypeIdentifier: worktreeType.identifier) { data, _ in
                 guard let data,
                   let worktreeID = String(data: data, encoding: .utf8),
-                  let worktree = store.state.repositories.worktree(id: worktreeID)
+                  let worktree = repositories.worktree(id: worktreeID)
                 else { return }
                 Task { @MainActor in
                   // Create multi-worktree container with current worktree as primary
@@ -82,9 +83,9 @@ struct WorktreeDetailView: View {
                   multiWorktreeContainer = container
                   // If dropping a different worktree, add it as a split
                   if worktree.id != primaryWorktree.id,
-                     let surfaceID = container.tree.root?.leftmostLeaf()?.id
+                     let surfaceID = container.tree.root?.leftmostLeaf().id
                   {
-                    container.insertSurface(for: worktree, at: surfaceID, zone: .right)
+                    _ = container.insertSurface(for: worktree, at: surfaceID, zone: .right)
                   }
                 }
               }
@@ -404,7 +405,7 @@ struct WorktreeDetailView: View {
 
     // If dropping a different worktree, insert it
     if worktree.id != primaryWorktree.id {
-      container.insertSurface(for: worktree, at: destinationID, zone: zone)
+      _ = container.insertSurface(for: worktree, at: destinationID, zone: zone)
     }
   }
 
@@ -415,7 +416,7 @@ struct WorktreeDetailView: View {
     in container: MultiWorktreeSplitContainer
   ) {
     guard let worktree = store.state.repositories.worktree(id: worktreeID) else { return }
-    container.insertSurface(for: worktree, at: destinationID, zone: zone)
+    _ = container.insertSurface(for: worktree, at: destinationID, zone: zone)
   }
 }
 
