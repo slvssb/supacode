@@ -15,16 +15,23 @@ import Sharing
 import SwiftUI
 
 private enum GhosttyCLI {
-  static let argv: [UnsafeMutablePointer<CChar>?] = {
+  static func argv(colorScheme: ColorScheme?) -> [UnsafeMutablePointer<CChar>?] {
     var args: [UnsafeMutablePointer<CChar>?] = []
     let executable = CommandLine.arguments.first ?? "supacode"
     args.append(strdup(executable))
     for shortcut in AppShortcuts.all {
       args.append(strdup("--keybind=\(shortcut.ghosttyKeybind)=unbind"))
     }
+    // Override the theme from config file to ensure the correct initial scheme.
+    // We use the Apple System Colors themes which respect the color_scheme setting.
+    if let scheme = colorScheme {
+      let theme = scheme == .dark ? "Apple System Colors Dark" : "Apple System Colors Light"
+      args.append(strdup("--theme=\(theme)"))
+    }
+    // For .system mode (nil), don't override the theme - let Ghostty detect system appearance
     args.append(nil)
     return args
-  }()
+  }
 }
 
 @MainActor
@@ -109,7 +116,7 @@ struct SupacodeApp: App {
     if let resourceURL = Bundle.main.resourceURL?.appendingPathComponent("ghostty") {
       setenv("GHOSTTY_RESOURCES_DIR", resourceURL.path, 1)
     }
-    GhosttyCLI.argv.withUnsafeBufferPointer { buffer in
+    GhosttyCLI.argv(colorScheme: initialSettings.appearanceMode.colorScheme).withUnsafeBufferPointer { buffer in
       let argc = UInt(max(0, buffer.count - 1))
       let argv = UnsafeMutablePointer(mutating: buffer.baseAddress)
       if ghostty_init(argc, argv) != GHOSTTY_SUCCESS {
