@@ -43,7 +43,7 @@ struct CommandPaletteFeatureTests {
         repositoryID: repository.id,
         name: "pending",
         detail: "pending"
-      ),
+      )
     ]
 
     let items = CommandPaletteFeature.commandPaletteItems(from: state)

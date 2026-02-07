@@ -215,7 +215,7 @@ struct RepositoriesFeatureTests {
         addedLines: nil,
         removedLines: nil,
         pullRequest: makePullRequest(state: "MERGED")
-      ),
+      )
     ]
     let store = TestStore(initialState: state) {
       RepositoriesFeature()
@@ -615,7 +615,7 @@ struct RepositoriesFeatureTests {
         repositoryID: repository.id,
         name: "pending",
         detail: ""
-      ),
+      )
     ]
     initialState.pinnedWorktreeIDs = [removedWorktree.id]
     initialState.worktreeInfoByID = [
@@ -699,7 +699,7 @@ struct RepositoriesFeatureTests {
         repositoryID: repository.id,
         name: "Creating worktree...",
         detail: ""
-      ),
+      )
     ]
     initialState.selection = .worktree(pendingID)
     let store = TestStore(initialState: initialState) {

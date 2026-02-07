@@ -116,7 +116,7 @@ struct MultiWorktreeSplitView: View {
               .onDrop(
                 of: [
                   TerminalSplitTreeView.dragType,
-                  Self.worktreeDragType
+                  Self.worktreeDragType,
                 ],
                 delegate: MultiDropDelegate(
                   dropState: $dropState,
@@ -124,7 +124,8 @@ struct MultiWorktreeSplitView: View {
                   destinationId: surfaceView.id,
                   onWorktreeDrop: onWorktreeDrop,
                   onSurfaceDrop: { payloadId, destinationId, zone in
-                    container.performSplitOperation(.drop(payloadId: payloadId, destinationId: destinationId, zone: zone))
+                    container.performSplitOperation(
+                      .drop(payloadId: payloadId, destinationId: destinationId, zone: zone))
                   }
                 )
               )
@@ -236,7 +237,7 @@ struct MultiWorktreeSplitView: View {
     func validateDrop(info: DropInfo) -> Bool {
       info.hasItemsConforming(to: [
         TerminalSplitTreeView.dragType,
-        UTType(exportedAs: "sh.supacode.worktreeId")
+        UTType(exportedAs: "sh.supacode.worktreeId"),
       ])
     }
 
