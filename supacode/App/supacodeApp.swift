@@ -82,20 +82,6 @@ struct SupacodeApp: App {
   @State private var commandKeyObserver: CommandKeyObserver
   @State private var store: StoreOf<AppFeature>
 
-  /// Returns the initial color scheme to use for Ghostty based on app settings.
-  /// When `.system` is selected, detects the actual system appearance.
-  private static func initialColorScheme(from settings: GlobalSettings) -> ColorScheme? {
-    switch settings.appearanceMode {
-    case .system:
-      // Detect system appearance at startup
-      return NSApp.effectiveAppearance.name == .darkAqua ? .dark : .light
-    case .light:
-      return .light
-    case .dark:
-      return .dark
-    }
-  }
-
   @MainActor init() {
     NSWindow.allowsAutomaticWindowTabbing = false
     UserDefaults.standard.set(200, forKey: "NSInitialToolTipDelay")
@@ -130,9 +116,9 @@ struct SupacodeApp: App {
         preconditionFailure("ghostty_init failed")
       }
     }
-    let runtime = GhosttyRuntime(
-      initialColorScheme: SupacodeApp.initialColorScheme(from: initialSettings)
-    )
+    // Apply the initial color scheme from settings before creating any surfaces.
+    // This ensures terminals start with the correct theme instead of default light.
+    let runtime = GhosttyRuntime(initialColorScheme: initialSettings.appearanceMode.colorScheme)
     _ghostty = State(initialValue: runtime)
     let shortcuts = GhosttyShortcutManager(runtime: runtime)
     _ghosttyShortcuts = State(initialValue: shortcuts)
