@@ -201,6 +201,12 @@ final class WorktreeTerminalManager {
     states[worktreeID]
   }
 
+  /// Returns the focused surface for the given worktree, if available.
+  /// This is used when a surface needs to be borrowed by the multi-worktree split container.
+  func focusedSurface(for worktreeID: Worktree.ID) -> GhosttySurfaceView? {
+    states[worktreeID]?.focusedSurface()
+  }
+
   func focusedTaskStatus(for worktreeID: Worktree.ID) -> WorktreeTaskStatus? {
     states[worktreeID]?.focusedTaskStatus
   }

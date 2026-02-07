@@ -65,7 +65,8 @@ struct WorktreeDetailView: View {
             .contentShape(.rect)
             .onDrop(of: [UTType(exportedAs: "sh.supacode.worktreeId")], isTargeted: nil) { providers in
               guard let provider = providers.first,
-                let primaryWorktree = store.state.repositories.worktree(for: store.state.repositories.selectedWorktreeID)
+                let primaryWorktree = store.state.repositories.worktree(
+                  for: store.state.repositories.selectedWorktreeID)
               else { return false }
               let worktreeType = UTType(exportedAs: "sh.supacode.worktreeId")
               let repositories = store.state.repositories
@@ -78,12 +79,13 @@ struct WorktreeDetailView: View {
                   // Create multi-worktree container with current worktree as primary
                   let container = MultiWorktreeSplitContainer(
                     runtime: terminalManager.runtimeValue,
-                    primaryWorktree: primaryWorktree
+                    primaryWorktree: primaryWorktree,
+                    terminalManager: terminalManager
                   )
                   multiWorktreeContainer = container
                   // If dropping a different worktree, add it as a split
                   if worktree.id != primaryWorktree.id,
-                     let surfaceID = container.tree.root?.leftmostLeaf().id
+                    let surfaceID = container.tree.root?.leftmostLeaf().id
                   {
                     _ = container.insertSurface(for: worktree, at: surfaceID, zone: .right)
                   }
@@ -387,7 +389,8 @@ struct WorktreeDetailView: View {
     _ zone: TerminalSplitTreeView.DropZone
   ) {
     guard let worktree = store.state.repositories.worktree(id: worktreeID) else { return }
-    guard let primaryWorktree = store.state.repositories.worktree(for: store.state.repositories.selectedWorktreeID) else {
+    guard let primaryWorktree = store.state.repositories.worktree(for: store.state.repositories.selectedWorktreeID)
+    else {
       return
     }
 
@@ -398,7 +401,8 @@ struct WorktreeDetailView: View {
     } else {
       container = MultiWorktreeSplitContainer(
         runtime: terminalManager.runtimeValue,
-        primaryWorktree: primaryWorktree
+        primaryWorktree: primaryWorktree,
+        terminalManager: terminalManager
       )
       multiWorktreeContainer = container
     }

@@ -61,6 +61,18 @@ final class WorktreeTerminalState {
     runScriptTabId != nil
   }
 
+  /// Returns the focused surface for the currently selected tab, if available.
+  /// This is used when a surface needs to be borrowed by the multi-worktree split container.
+  func focusedSurface() -> GhosttySurfaceView? {
+    guard let tabId = tabManager.selectedTabId,
+      let focusedId = focusedSurfaceIdByTab[tabId],
+      let surface = surfaces[focusedId]
+    else {
+      return nil
+    }
+    return surface
+  }
+
   func ensureInitialTab(focusing: Bool) {
     guard tabManager.tabs.isEmpty else { return }
     guard !isEnsuringInitialTab else { return }
