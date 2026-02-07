@@ -68,10 +68,7 @@ final class GhosttyRuntime {
     // where surfaces were created with the default (light) theme before
     // GhosttyColorSchemeSyncView.task could run.
     if let initialScheme = initialColorScheme {
-      NSLog("[GhosttyRuntime] Applying initial color scheme: \(initialScheme == .dark ? "dark" : "light")")
       setColorScheme(initialScheme)
-    } else {
-      NSLog("[GhosttyRuntime] No initial color scheme (system mode)")
     }
 
     let center = NotificationCenter.default
@@ -133,51 +130,20 @@ final class GhosttyRuntime {
       scheme == .dark
       ? GHOSTTY_COLOR_SCHEME_DARK
       : GHOSTTY_COLOR_SCHEME_LIGHT
-    NSLog("[GhosttyRuntime] setColorScheme: \(scheme == .dark ? "GHOSTTY_COLOR_SCHEME_DARK" : "GHOSTTY_COLOR_SCHEME_LIGHT") (\(ghosttyScheme))")
 
     // Update the Ghostty config file to persist the theme change.
     // The config file takes precedence over programmatic settings,
     // so we must update it directly for the theme to apply correctly.
-    let themeName = scheme == .dark ? "Apple System Colors" : "Apple System Colors Light"
-    updateConfigFile(theme: themeName)
+    GhosttyConfigUpdater.updateTheme(for: scheme)
 
     // Reload the config from the file to apply the theme change.
     // We use soft=false to force a full reload from the config file.
-    // For APP target, the union field is not used, so we pass a dummy value.
     var target = ghostty_target_s()
     target.tag = GHOSTTY_TARGET_APP
     reloadConfig(soft: false, target: target)
 
     lastColorScheme = ghosttyScheme
     applyColorSchemeToSurfaces(ghosttyScheme)
-  }
-
-  private func updateConfigFile(theme: String) {
-    let ghosttyConfigPath = (NSHomeDirectory() as NSString).appendingPathComponent("Library/Application Support/com.mitchellh.ghostty/config")
-    guard let currentConfig = try? String(contentsOfFile: ghosttyConfigPath, encoding: .utf8) else {
-      NSLog("[GhosttyRuntime] Failed to read Ghostty config at \(ghosttyConfigPath)")
-      return
-    }
-
-    var lines = currentConfig.components(separatedBy: .newlines)
-    var themeLineFound = false
-    for i in 0..<lines.count {
-      let line = lines[i].trimmingCharacters(in: .whitespaces)
-      if line.hasPrefix("theme") {
-        lines[i] = "theme = \(theme)"
-        themeLineFound = true
-        break
-      }
-    }
-    if !themeLineFound {
-      lines.append("theme = \(theme)")
-    }
-
-    let updatedConfig = lines.joined(separator: "\n")
-    if let data = updatedConfig.data(using: .utf8) {
-      FileManager.default.createFile(atPath: ghosttyConfigPath, contents: data)
-      NSLog("[GhosttyRuntime] Updated config file theme to: \(theme)")
-    }
   }
 
   func registerSurface(_ surface: ghostty_surface_t) -> SurfaceReference {
