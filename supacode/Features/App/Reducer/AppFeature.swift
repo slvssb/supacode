@@ -13,6 +13,7 @@ private let notificationSound: NSSound? = {
 
 private enum CancelID {
   static let periodicRefresh = "app.periodicRefresh"
+  static let fontSizeSave = "app.fontSizeSave"
 }
 
 @Reducer
@@ -638,6 +639,13 @@ struct AppFeature {
         )
       case .terminalEvent(.setupScriptConsumed(let worktreeID)):
         return .send(.repositories(.consumeSetupScript(worktreeID)))
+
+      case .terminalEvent(.fontSizeChanged(_, let fontSize)):
+        return .run { _ in
+          @Shared(.settingsFile) var settingsFile
+          $settingsFile.withLock { $0.global.terminalFontSize = fontSize }
+        }
+        .debounce(id: CancelID.fontSizeSave, for: .seconds(1), scheduler: DispatchQueue.main)
 
       case .terminalEvent:
         return .none

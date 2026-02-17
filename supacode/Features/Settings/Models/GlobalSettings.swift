@@ -13,6 +13,7 @@ nonisolated struct GlobalSettings: Codable, Equatable, Sendable {
   var githubIntegrationEnabled: Bool
   var deleteBranchOnDeleteWorktree: Bool
   var automaticallyArchiveMergedWorktrees: Bool
+  var terminalFontSize: Float32?
 
   static let `default` = GlobalSettings(
     appearanceMode: .dark,
@@ -28,7 +29,8 @@ nonisolated struct GlobalSettings: Codable, Equatable, Sendable {
     crashReportsEnabled: true,
     githubIntegrationEnabled: true,
     deleteBranchOnDeleteWorktree: true,
-    automaticallyArchiveMergedWorktrees: false
+    automaticallyArchiveMergedWorktrees: false,
+    terminalFontSize: nil
   )
 
   init(
@@ -45,7 +47,8 @@ nonisolated struct GlobalSettings: Codable, Equatable, Sendable {
     crashReportsEnabled: Bool,
     githubIntegrationEnabled: Bool,
     deleteBranchOnDeleteWorktree: Bool,
-    automaticallyArchiveMergedWorktrees: Bool
+    automaticallyArchiveMergedWorktrees: Bool,
+    terminalFontSize: Float32?
   ) {
     self.appearanceMode = appearanceMode
     self.defaultEditorID = defaultEditorID
@@ -61,6 +64,7 @@ nonisolated struct GlobalSettings: Codable, Equatable, Sendable {
     self.githubIntegrationEnabled = githubIntegrationEnabled
     self.deleteBranchOnDeleteWorktree = deleteBranchOnDeleteWorktree
     self.automaticallyArchiveMergedWorktrees = automaticallyArchiveMergedWorktrees
+    self.terminalFontSize = terminalFontSize
   }
 
   init(from decoder: any Decoder) throws {
@@ -101,5 +105,8 @@ nonisolated struct GlobalSettings: Codable, Equatable, Sendable {
     automaticallyArchiveMergedWorktrees =
       try container.decodeIfPresent(Bool.self, forKey: .automaticallyArchiveMergedWorktrees)
       ?? Self.default.automaticallyArchiveMergedWorktrees
+    terminalFontSize =
+      try container.decodeIfPresent(Float32.self, forKey: .terminalFontSize)
+      ?? Self.default.terminalFontSize
   }
 }

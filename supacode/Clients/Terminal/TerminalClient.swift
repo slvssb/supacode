@@ -33,6 +33,7 @@ struct TerminalClient {
     case runScriptStatusChanged(worktreeID: Worktree.ID, isRunning: Bool)
     case commandPaletteToggleRequested(worktreeID: Worktree.ID)
     case setupScriptConsumed(worktreeID: Worktree.ID)
+    case fontSizeChanged(worktreeID: Worktree.ID, fontSize: Float32)
   }
 }
 

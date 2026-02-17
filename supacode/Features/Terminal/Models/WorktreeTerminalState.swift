@@ -16,6 +16,7 @@ final class WorktreeTerminalState {
   let tabManager: TerminalTabManager
   private let runtime: GhosttyRuntime
   private let worktree: Worktree
+  private let savedFontSize: Float32?
   @ObservationIgnored
   @SharedReader private var repositorySettings: RepositorySettings
   private var trees: [TerminalTabID: SplitTree<GhosttySurfaceView>] = [:]
@@ -42,11 +43,13 @@ final class WorktreeTerminalState {
   var onRunScriptStatusChanged: ((Bool) -> Void)?
   var onCommandPaletteToggle: (() -> Void)?
   var onSetupScriptConsumed: (() -> Void)?
+  var onFontSizeChanged: ((Float32) -> Void)?
 
-  init(runtime: GhosttyRuntime, worktree: Worktree, runSetupScript: Bool = false) {
+  init(runtime: GhosttyRuntime, worktree: Worktree, runSetupScript: Bool = false, savedFontSize: Float32? = nil) {
     self.runtime = runtime
     self.worktree = worktree
     self.pendingSetupScript = runSetupScript
+    self.savedFontSize = savedFontSize
     self.tabManager = TerminalTabManager()
     _repositorySettings = SharedReader(
       wrappedValue: RepositorySettings.default,
@@ -622,6 +625,10 @@ final class WorktreeTerminalState {
       guard let self, let view else { return }
       self.handleCloseRequest(for: view, processAlive: processAlive)
     }
+    view.bridge.onFontSizeChanged = { [weak self] fontSize in
+      guard let self else { return }
+      self.onFontSizeChanged?(fontSize)
+    }
     view.onFocusChange = { [weak self, weak view] focused in
       guard let self, let view, focused else { return }
       self.focusedSurfaceIdByTab[tabId] = view.id
@@ -647,7 +654,7 @@ final class WorktreeTerminalState {
       let view = surfaces[surfaceId],
       let sourceSurface = view.surface
     else {
-      return InheritedSurfaceConfig(workingDirectory: nil, fontSize: nil)
+      return InheritedSurfaceConfig(workingDirectory: nil, fontSize: savedFontSize)
     }
 
     let inherited = ghostty_surface_inherited_config(sourceSurface, context)

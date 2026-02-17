@@ -17,6 +17,7 @@ final class GhosttySurfaceBridge {
   var onCommandPaletteToggle: (() -> Bool)?
   var onProgressReport: ((ghostty_action_progress_report_state_e) -> Void)?
   var onDesktopNotification: ((String, String) -> Void)?
+  var onFontSizeChanged: ((Float32) -> Void)?
   private var progressResetTask: Task<Void, Never>?
 
   deinit {
@@ -419,6 +420,13 @@ final class GhosttySurfaceBridge {
 
     case GHOSTTY_ACTION_CONFIG_CHANGE:
       state.configChangeCount += 1
+      if let surface {
+        let inherited = ghostty_surface_inherited_config(surface, GHOSTTY_SURFACE_CONTEXT_SPLIT)
+        let fontSize = inherited.font_size
+        if fontSize > 0 {
+          onFontSizeChanged?(fontSize)
+        }
+      }
       return true
 
     case GHOSTTY_ACTION_OPEN_CONFIG:

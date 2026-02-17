@@ -119,10 +119,13 @@ final class WorktreeTerminalManager {
       return existing
     }
     let runSetupScript = runSetupScriptIfNew()
+    @Shared(.settingsFile) var settingsFile
+    let savedFontSize = settingsFile.global.terminalFontSize
     let state = WorktreeTerminalState(
       runtime: runtime,
       worktree: worktree,
-      runSetupScript: runSetupScript
+      runSetupScript: runSetupScript,
+      savedFontSize: savedFontSize
     )
     state.setNotificationsEnabled(notificationsEnabled)
     state.isSelected = { [weak self] in
@@ -154,6 +157,9 @@ final class WorktreeTerminalManager {
     }
     state.onSetupScriptConsumed = { [weak self] in
       self?.emit(.setupScriptConsumed(worktreeID: worktree.id))
+    }
+    state.onFontSizeChanged = { [weak self] fontSize in
+      self?.emit(.fontSizeChanged(worktreeID: worktree.id, fontSize: fontSize))
     }
     states[worktree.id] = state
     terminalLogger.info("Created terminal state for worktree \(worktree.id)")
