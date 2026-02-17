@@ -11,6 +11,8 @@ enum GhosttyConfigUpdater {
   private enum ParsedTheme {
     case none
     case single(String)
+    case partialLight(String)  // Only light:Theme specified
+    case partialDark(String)  // Only dark:Theme specified
     case dual(light: String, dark: String)
   }
 
@@ -32,6 +34,28 @@ enum GhosttyConfigUpdater {
     return lightKeywords.contains { lowercased.contains($0) }
   }
 
+  /// Extracts a theme name with the given prefix from a comma-separated value string
+  /// - Parameters:
+  ///   - prefix: The prefix to look for (e.g., "light:" or "dark:")
+  ///   - value: The comma-separated theme value string
+  /// - Returns: The extracted theme name, or nil if not found
+  private static func extractPrefixedTheme(_ prefix: String, from value: String) -> String? {
+    let prefixLength = prefix.count
+    let parts = value.components(separatedBy: ",")
+
+    for part in parts {
+      let trimmedPart = part.trimmingCharacters(in: .whitespaces)
+      if trimmedPart.hasPrefix(prefix) {
+        let themeName = String(trimmedPart.dropFirst(prefixLength)).trimmingCharacters(in: .whitespaces)
+        if !themeName.isEmpty {
+          return themeName
+        }
+      }
+    }
+
+    return nil
+  }
+
   /// Parses the theme setting from a Ghostty config file content
   private static func parseTheme(from config: String) -> ParsedTheme {
     let lines = config.components(separatedBy: .newlines)
@@ -47,28 +71,34 @@ enum GhosttyConfigUpdater {
       let value = String(trimmed[trimmed.index(after: equalIndex)...])
         .trimmingCharacters(in: .whitespaces)
 
-      // Check for dual theme format: "light:...,dark:..."
-      if value.contains("light:") && value.contains("dark:") {
-        // Parse dual theme format
-        let parts = value.components(separatedBy: ",")
-        var lightTheme = ""
-        var darkTheme = ""
+      let hasLight = value.contains("light:")
+      let hasDark = value.contains("dark:")
 
-        for part in parts {
-          let trimmedPart = part.trimmingCharacters(in: .whitespaces)
-          if trimmedPart.hasPrefix("light:") {
-            lightTheme = String(trimmedPart.dropFirst(6)).trimmingCharacters(in: .whitespaces)
-          } else if trimmedPart.hasPrefix("dark:") {
-            darkTheme = String(trimmedPart.dropFirst(5)).trimmingCharacters(in: .whitespaces)
-          }
-        }
+      // Check for complete dual theme format: "light:...,dark:..."
+      if hasLight && hasDark {
+        let lightTheme = extractPrefixedTheme("light:", from: value)
+        let darkTheme = extractPrefixedTheme("dark:", from: value)
 
-        if !lightTheme.isEmpty && !darkTheme.isEmpty {
-          return .dual(light: lightTheme, dark: darkTheme)
+        if let light = lightTheme, let dark = darkTheme {
+          return .dual(light: light, dark: dark)
         }
       }
 
-      // Single theme format
+      // Handle partial dual themes (only light: specified, no dark:)
+      if hasLight && !hasDark {
+        if let theme = extractPrefixedTheme("light:", from: value) {
+          return .partialLight(theme)
+        }
+      }
+
+      // Handle partial dual themes (only dark: specified, no light:)
+      if hasDark && !hasLight {
+        if let theme = extractPrefixedTheme("dark:", from: value) {
+          return .partialDark(theme)
+        }
+      }
+
+      // Single theme format (no light: or dark: prefixes)
       let themeName = value.trimmingCharacters(in: .whitespaces)
       if !themeName.isEmpty {
         return .single(themeName)
@@ -102,6 +132,22 @@ enum GhosttyConfigUpdater {
     case .dual:
       // User has dual theme → respect it, don't modify
       return
+
+    case .partialLight(let theme):
+      // User specified only light theme → use Apple System Colors for dark
+      updateExistingConfig(
+        currentConfig,
+        lightTheme: theme,
+        darkTheme: "Apple System Colors",
+      )
+
+    case .partialDark(let theme):
+      // User specified only dark theme → use Apple System Colors Light for light
+      updateExistingConfig(
+        currentConfig,
+        lightTheme: "Apple System Colors Light",
+        darkTheme: theme,
+      )
 
     case .single(let theme):
       // Single theme → determine mode and create dual
